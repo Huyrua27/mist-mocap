@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>MIST Sync Flash</title>
+</head>
+<body>
+
+<style>
+  :root{
+    --bg:#05070A; --stage:#000; --panel:#0E131A; --panel-edge:#1E2630;
+    --ink:#E6ECF2; --muted:#8A94A6; --amber:#FFB020; --amber-dim:#7a5410;
+    --cyan:#4DD0E1; --good:#3ddc84; --warn:#ff5d5d;
+    --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);overscroll-behavior:none;
+    -webkit-user-select:none;user-select:none;touch-action:manipulation}
+  body{font-family:var(--sans);color:var(--ink);overflow:hidden}
+
+  /* ---- FLASH STAGE (the instrument) ---- */
+  #stage{position:fixed;inset:0;background:var(--stage);display:grid;place-items:center;z-index:1;cursor:pointer}
+  #patch{width:72vmin;height:72vmin;background:#fff;border-radius:6vmin;opacity:0;
+    will-change:opacity;transform:translateZ(0)}
+  #brand{position:fixed;top:calc(env(safe-area-inset-top) + 14px);left:16px;z-index:3;
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--muted);
+    text-transform:uppercase;transition:opacity .25s;pointer-events:none}
+  #brand b{color:var(--amber);font-weight:600}
+  #state{position:fixed;top:calc(env(safe-area-inset-top) + 12px);right:16px;z-index:3;
+    display:flex;gap:8px;transition:opacity .25s}
+  .pill{font-family:var(--mono);font-size:10px;letter-spacing:.12em;padding:5px 9px;border-radius:999px;
+    border:1px solid var(--panel-edge);color:var(--muted);text-transform:uppercase}
+  .pill[data-on="1"]{color:var(--good);border-color:#1c3a2a;background:#0c1712}
+
+  /* ---- CONTROL SHEET ---- */
+  #panel{position:fixed;left:0;right:0;bottom:0;z-index:4;
+    padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);
+    background:linear-gradient(180deg,rgba(14,19,26,0) 0%,var(--panel) 22%);
+    transition:transform .3s cubic-bezier(.2,.7,.2,1),opacity .25s}
+  #panel.hidden{transform:translateY(105%);opacity:0;pointer-events:none}
+  .sheet{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+
+  .row{display:flex;flex-direction:column;gap:7px}
+  .lbl{display:flex;justify-content:space-between;align-items:baseline;
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .lbl .val{color:var(--ink);font-size:13px;letter-spacing:.06em}
+  .lbl .val em{color:var(--amber);font-style:normal}
+  .lbl .val.bad em{color:var(--warn)}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:34px;background:transparent;margin:0}
+  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:99px;
+    background:linear-gradient(90deg,var(--amber) var(--fill,40%),#222a33 var(--fill,40%))}
+  input[type=range]::-moz-range-track{height:4px;border-radius:99px;background:#222a33}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;margin-top:-9px;
+    width:22px;height:22px;border-radius:50%;background:var(--ink);border:3px solid var(--amber);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--ink);border:3px solid var(--amber);cursor:pointer}
+
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;font-family:var(--mono);font-size:13px;letter-spacing:.08em;padding:9px 0;
+    background:#141b23;color:var(--muted);border:1px solid var(--panel-edge);border-radius:9px;cursor:pointer;transition:.15s}
+  .seg button[aria-pressed=true]{color:#05070A;background:var(--amber);border-color:var(--amber);font-weight:700}
+
+  .actions{display:flex;gap:10px;align-items:stretch}
+  #fireBtn{flex:1;font-family:var(--mono);font-weight:800;font-size:20px;letter-spacing:.22em;
+    padding:18px 0;border:none;border-radius:13px;cursor:pointer;color:#05070A;
+    background:linear-gradient(180deg,#FFC24D,#FF9E0B);box-shadow:0 6px 22px -6px var(--amber);transition:transform .08s}
+  #fireBtn:active{transform:scale(.98)}
+  .icobtn{width:56px;border:1px solid var(--panel-edge);background:#141b23;color:var(--ink);
+    border-radius:13px;font-size:20px;cursor:pointer}
+  .icobtn[aria-pressed=true]{border-color:var(--amber);color:var(--amber)}
+
+  #log{font-family:var(--mono);font-size:11px;color:var(--muted);min-height:16px;
+    display:flex;flex-wrap:wrap;gap:4px 14px;letter-spacing:.03em}
+  #log b{color:var(--cyan);font-weight:500}
+
+  /* ---- HELP ---- */
+  #helpBtn{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 20px);
+    right:16px;z-index:6;width:40px;height:40px;border-radius:50%;display:none}
+  #note{position:fixed;inset:auto 0 0 0;z-index:8;background:var(--panel);border-top:1px solid var(--panel-edge);
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 18px);transform:translateY(0);transition:transform .3s;max-width:520px;margin:0 auto}
+  #note.hidden{transform:translateY(110%)}
+  #note h2{margin:0 0 10px;font-size:15px;letter-spacing:.02em}
+  #note ul{margin:0 0 14px;padding-left:18px;color:var(--muted);font-size:13px;line-height:1.6}
+  #note b{color:var(--ink)} #note code{font-family:var(--mono);color:var(--amber);font-size:12px}
+  #note button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--amber);color:#05070A;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.1em}
+  .firing #brand,.firing #state,.firing #panel,.firing #helpBtn{opacity:0!important;pointer-events:none}
+  @media (prefers-reduced-motion:reduce){#panel,#note{transition:none}}
+</style>
+
+<div id="stage"><div id="patch"></div></div>
+<div id="brand"><b>MIST</b> · SYNC FLASH</div>
+<div id="state">
+  <span class="pill" id="wlPill" data-on="0">WAKE</span>
+  <span class="pill" id="fsPill" data-on="0">FULL</span>
+</div>
+
+<div id="panel">
+  <div class="sheet">
+    <div class="row">
+      <div class="lbl">Thời gian mờ dần (fade)<span class="val" id="durVal"><em>150</em> ms</span></div>
+      <input type="range" id="dur" min="50" max="400" step="10" value="150">
+    </div>
+
+    <div class="row">
+      <div class="lbl">FPS camera reference<span class="val" id="fpsHint"></span></div>
+      <div class="seg" id="fpsSeg">
+        <button data-v="30">30</button><button data-v="60" aria-pressed="true">60</button>
+        <button data-v="120">120</button><button data-v="240">240</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="lbl">Số phát / chuỗi<span class="val" id="gapVal">cách <em>800</em> ms</span></div>
+      <div class="seg" id="pulseSeg">
+        <button data-v="1" aria-pressed="true">×1</button><button data-v="3">×3</button><button data-v="5">×5</button>
+      </div>
+      <input type="range" id="gap" min="300" max="1500" step="50" value="800">
+    </div>
+
+    <div class="row">
+      <div class="lbl">Màu xung <span style="color:var(--muted);font-size:10px">(chống lệch 1 chu kỳ)</span><span class="val" id="colorVal"></span></div>
+      <div class="seg" id="colorSeg">
+        <button data-v="w" aria-pressed="true">Trắng</button><button data-v="rgb">R·G·B</button><button data-v="6">6 màu</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="fireBtn">FIRE</button>
+      <button class="icobtn" id="wlBtn" aria-pressed="true" title="Giữ màn hình sáng">☀</button>
+      <button class="icobtn" id="fsBtn" aria-pressed="false" title="Toàn màn hình">⛶</button>
+      <button class="icobtn" id="hideBtn" title="Ẩn bảng điều khiển">▾</button>
+      <button class="icobtn" id="infoBtn" title="Hướng dẫn">?</button>
+    </div>
+    <div id="log">Chạm ô sáng hoặc nút FIRE (phím Space) để bắn.</div>
+  </div>
+</div>
+<button class="icobtn" id="helpBtn" title="Hiện bảng">▴</button>
+
+<div id="note" class="hidden">
+  <h2>Trước khi quay — 4 điều bắt buộc</h2>
+  <ul>
+    <li><b>Độ sáng màn hình MAX</b>, tắt <b>auto-brightness</b> (màn hình mờ hơn đèn flash — cần tối đa tín hiệu).</li>
+    <li>Đặt điện thoại <b>đủ lớn trong khung</b> mọi camera, nền quanh nó tối. Ô trắng chính là <code>FLASH_ROI</code>.</li>
+    <li>Bật <code>WAKE</code> (mặc định) để màn không tự tối/ngủ. Bật <code>FULL</code> cho toàn màn hình.</li>
+    <li>Bắn ở <b>đầu và cuối mỗi take</b> (không bắn liên tục lúc diễn — sẽ nhiễu footage). Chuỗi ×3 cho slate.</li>
+    <li>Chuỗi nhiều phát nên chọn <b>màu R·G·B</b>: mỗi xung một màu → phân biệt được xung nào, tránh ghép nhầm lệch đúng 1 chu kỳ. Đọc bằng kênh màu tương ứng trong <code>sync_groundtruth.py</code>.</li>
+  </ul>
+  <button id="noteClose">ĐÃ RÕ</button>
+</div>
+
+<script>
+(function(){
+  const $=s=>document.querySelector(s);
+  const stage=$("#stage"),patch=$("#patch"),logEl=$("#log");
+  let dur=150, fps=60, pulses=1, gap=800, colorMode="w", firing=false;
+  const peaks=[], peakColors=[]; // performance.now() + màu của mỗi đỉnh
+
+  // Mỗi xung 1 màu → phân biệt xung, chống ghép nhầm lệch đúng 1 chu kỳ
+  const SEQ={ w:[["Trắng","255,255,255"]],
+    rgb:[["Đỏ","255,40,40"],["Lục","40,255,60"],["Lam","70,110,255"]],
+    "6":[["Đỏ","255,40,40"],["Lục","40,255,60"],["Lam","70,110,255"],["Lục lam","40,255,255"],["Tím","255,70,255"],["Vàng","255,225,40"]] };
+  const pulseColor=i=>{const s=SEQ[colorMode];return s[i%s.length];};
+
+  const hann=x=> .5*(1-Math.cos(2*Math.PI*x)); // đối xứng, đỉnh ở x=0.5
+
+  // ---- readouts ----
+  function samples(){return Math.round(dur/1000*fps);}
+  function refreshDur(){
+    $("#dur").style.setProperty("--fill",((dur-50)/(400-50)*100)+"%");
+    const n=samples(), bad=n<4;
+    $("#durVal").innerHTML="<em>"+dur+"</em> ms";
+    const h=$("#fpsHint"); h.className="val"+(bad?" bad":"");
+    h.innerHTML="≈ <em>"+n+"</em> frame phủ đường cong"+(bad?" · TĂNG fade":"");
+  }
+  function refreshGap(){
+    $("#gap").style.setProperty("--fill",((gap-300)/(1500-300)*100)+"%");
+    $("#gapVal").innerHTML = pulses>1 ? "cách <em>"+gap+"</em> ms" : "1 phát";
+    $("#gap").style.opacity = pulses>1?1:.35;
+  }
+
+  // ---- controls ----
+  $("#dur").addEventListener("input",e=>{dur=+e.target.value;refreshDur();});
+  $("#gap").addEventListener("input",e=>{gap=+e.target.value;refreshGap();});
+  function seg(id,cb){document.querySelectorAll(id+" button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(id+" button").forEach(x=>x.setAttribute("aria-pressed","false"));
+    b.setAttribute("aria-pressed","true");cb(+b.dataset.v);}));}
+  seg("#fpsSeg",v=>{fps=v;refreshDur();});
+  seg("#pulseSeg",v=>{pulses=v;refreshGap();});
+  // color seg dùng chuỗi (không ép số như seg())
+  function segStr(id,cb){document.querySelectorAll(id+" button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(id+" button").forEach(x=>x.setAttribute("aria-pressed","false"));
+    b.setAttribute("aria-pressed","true");cb(b.dataset.v);}));}
+  function refreshColor(){$("#colorVal").innerHTML=SEQ[colorMode].map(c=>'<span style="color:rgb('+c[1]+')">●</span>').join(" ");}
+  segStr("#colorSeg",v=>{colorMode=v;refreshColor();});
+
+  // ---- the fire sequence ----
+  function fire(){
+    if(firing)return; firing=true; document.body.classList.add("firing");
+    const period=dur+gap, t0=performance.now();
+    peaks.length=0; peakColors.length=0; let logged=0;
+    function frame(now){
+      const el=now-t0, idx=Math.floor(el/period), local=el-idx*period;
+      if(idx>=pulses && local>dur){ patch.style.opacity=0; end(); return; }
+      let b=0;
+      if(idx<pulses && local<=dur){ b=hann(local/dur); patch.style.background="rgb("+pulseColor(idx)[1]+")"; }
+      patch.style.opacity=b;
+      // log each peak once (crossing local=dur/2)
+      if(idx<pulses && idx===logged && local>=dur/2){ peaks.push(t0+idx*period+dur/2); peakColors.push(pulseColor(idx)); logged++; }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    function end(){
+      firing=false; document.body.classList.remove("firing");
+      const parts=peaks.map((p,i)=>{ const c=peakColors[i];
+        const dot='<span style="color:rgb('+c[1]+')">●</span>';
+        return dot+(i? " <b>+"+(p-peaks[i-1]).toFixed(1)+"ms</b>" : " peak@"+p.toFixed(1)+"ms"); });
+      logEl.innerHTML = "Đã bắn "+peaks.length+" phát &nbsp; "+parts.join(" &nbsp; ");
+    }
+  }
+  $("#fireBtn").addEventListener("click",e=>{e.stopPropagation();fire();});
+  stage.addEventListener("click",fire);
+  addEventListener("keydown",e=>{
+    if(e.code==="Space"){e.preventDefault();fire();}
+    if(e.code==="Escape"){togglePanel(true);}
+  });
+
+  // ---- panel / help ----
+  function togglePanel(show){
+    $("#panel").classList.toggle("hidden",!show);
+    $("#helpBtn").style.display=show?"none":"block";
+  }
+  $("#hideBtn").addEventListener("click",e=>{e.stopPropagation();togglePanel(false);});
+  $("#helpBtn").addEventListener("click",e=>{e.stopPropagation();togglePanel(true);});
+  $("#infoBtn").addEventListener("click",e=>{e.stopPropagation();$("#note").classList.remove("hidden");});
+  $("#noteClose").addEventListener("click",()=>$("#note").classList.add("hidden"));
+
+  // ---- fullscreen ----
+  $("#fsBtn").addEventListener("click",async e=>{e.stopPropagation();
+    try{ if(!document.fullscreenElement){await document.documentElement.requestFullscreen();}
+      else{await document.exitFullscreen();} }catch(_){}
+  });
+  document.addEventListener("fullscreenchange",()=>{
+    const on=!!document.fullscreenElement;
+    $("#fsBtn").setAttribute("aria-pressed",on); $("#fsPill").dataset.on=on?1:0;
+  });
+
+  // ---- wake lock ----
+  let wl=null, wlWant=true;
+  async function reqWL(){ try{ if(wlWant && "wakeLock" in navigator){ wl=await navigator.wakeLock.request("screen");
+    $("#wlPill").dataset.on=1; wl.addEventListener("release",()=>$("#wlPill").dataset.on=0);} }catch(_){ $("#wlPill").dataset.on=0; } }
+  $("#wlBtn").addEventListener("click",async e=>{e.stopPropagation();
+    wlWant=!wlWant; $("#wlBtn").setAttribute("aria-pressed",wlWant);
+    if(wlWant)reqWL(); else if(wl){wl.release();wl=null;}
+  });
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible")reqWL(); });
+  reqWL();
+
+  refreshDur(); refreshGap(); refreshColor();
+})();
+</script>
+
+</body>
+</html>

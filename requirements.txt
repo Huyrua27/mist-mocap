@@ -1,0 +1,4 @@
+# Core — đủ để chạy benchmark harness + tools (KHÔNG cần GPU/torch)
+numpy>=1.23
+scipy>=1.9
+opencv-python>=4.7

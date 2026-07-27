@@ -1,102 +1,137 @@
 # MIST — Millisecond-accurate Intra-frame Synchronization
 
-Sub-frame đồng bộ đa camera cho Motion Capture. Repo dùng chung cho nhóm 4 người,
-hướng nộp **CSoNet 2026**.
+Official code for **sub-frame temporal synchronization of multi-view video** for motion
+capture. MIST estimates the fractional inter-camera offset `Δt ∈ ℝ` (in units of frames)
+directly from 2D keypoint trajectories, targeting the sub-frame regime where a residual of
+even a fraction of a frame corrupts 3D triangulation of fast motion.
 
-> Vì bộ **IFID không truy cập được**, benchmark chính được dựng bằng **controlled-desync**
-> từ CMU Panoptic (đã đồng bộ) + synthetic; data tự quay (5 cam) là tập real-world / downstream.
+Because the **IFID benchmark is not publicly accessible**, this repo ships a fully
+reproducible **controlled-desync benchmark**: temporally-aligned sequences (CMU Panoptic /
+synthetic) are re-sampled at a known fractional shift in the *keypoint domain*, yielding
+exact, artifact-free ground-truth offsets in unlimited quantity.
 
 ---
 
-## Chạy thử NGAY (không cần Panoptic, không cần GPU)
+## Highlights
+
+- **Runs out of the box** — a synthetic benchmark with real numbers, no dataset download, no GPU.
+- **Keypoint-domain desync generator** — exact sub-frame ground truth without pixel-interpolation artifacts.
+- **Unified evaluation harness** — every method implements one interface; one call produces the metric table.
+- **Standard metrics** — Frm.err, Accin@τ, Accex@i, MAE/RMSE (ms), reported per velocity bucket.
+- **Baselines included** — Cross-Correlation (+parabolic sub-frame); DTW and Caspi–Irani interfaces.
+- **On-set capture tools** — a fade-flash sync signal, a webcam recorder with per-frame host timestamps, and a ground-truth flash detector.
+
+---
+
+## Installation
 
 ```bash
-pip install -r requirements.txt
+git clone <repo-url> && cd mist-sync
+python -m venv .venv && . .venv/Scripts/activate      # Windows: .venv\Scripts\activate
+pip install -r requirements.txt                       # numpy, scipy, opencv
+pip install -r requirements-model.txt                 # torch — only for the learned model
+```
+
+## Quick start
+
+```bash
 python scripts/demo_benchmark.py
 python tests/test_core.py
 ```
 
-Demo sinh keypoint tổng hợp → tiêm offset có nhãn → chạy baseline → in bảng:
+`demo_benchmark.py` generates synthetic keypoints, injects labeled offsets, runs the
+baselines, and prints:
 
 ```
     Method           n     Frm.err   Accin@0.1  Accin@0.25      MAE_ms     RMSE_ms
 ------------------------------------------------------------------------------
- Zero(sàn)         240      0.9796      0.0583      0.1333      32.654      37.705
-CC+parabol         240      0.0936       0.725      0.8792       3.118       5.729
-       DTW         240         nan         ...  (stub — P1 điền)
+ Zero(floor)       240      0.9796      0.0583      0.1333      32.654      37.705
+CC+parabolic       240      0.0936       0.725      0.8792       3.118       5.729
 ```
-
-Nếu bảng này ra được → toàn bộ harness hoạt động, cắm method mới vào là có số.
 
 ---
 
-## Cấu trúc
+## The benchmark
+
+Ground truth is generated in the **keypoint domain** rather than by interpolating pixels:
+
+1. Load a temporally-synchronized multi-view sequence (CMU Panoptic, or synthetic).
+2. For a target offset `Δt`, resample a view's 2D keypoint trajectory at times shifted by
+   `Δt` via cubic-spline interpolation. Because keypoint trajectories are smooth, sub-frame
+   resampling is near-exact — the injected `Δt` *is* the ground-truth label.
+3. Split by **sequence** (never by frame) to avoid train/test leakage.
+
+Evaluation is velocity-bucketed, exposing where methods degrade as object speed rises — the
+core failure mode of frame-level synchronization.
+
+---
+
+## Repository structure
 
 ```
 mist-sync/
 ├── mist/
-│   ├── core/            # HỢP ĐỒNG dùng chung — đừng đổi tự do
+│   ├── core/            # Shared contract: types + method interface
 │   │   ├── types.py         KeypointSequence, SyncResult, SyncSample
-│   │   └── interfaces.py     SyncMethod (mọi method kế thừa)
-│   ├── benchmark/       # WS1 — P1
-│   │   ├── desync.py         tiêm ∆t miền keypoint (spline)  ✅ xong
-│   │   ├── metrics.py        Frm.err/Accin/Accex/MAE/RMSE + bucket  ✅ xong
-│   │   ├── synthetic.py      sinh data demo/test  ✅ xong
-│   │   ├── eval.py           harness chạy mọi method  ✅ xong
-│   │   └── baselines/        CC ✅ | DTW ⬜ | Caspi-Irani ⬜ | Zero ✅
-│   ├── model/          # WS2 — P2 :  continusyncformer.py  ⬜ (skeleton + TODO)
-│   ├── panoptic/       # WS1 — P1 :  loader.py  ⬜ (nạp + chiếu 2D)
-│   └── realworld/      # WS3 — P3 :  organize.py ⬜ | sync_pipeline.py ⬜
-├── tools/              # ĐÃ CHẠY THẬT trên data: sync_groundtruth.py, record_webcams.py, sync_flash.html
-├── scripts/            # demo_benchmark.py ✅ | run_benchmark.py
-├── tests/              # test_core.py ✅
-└── docs/               # ShootSheet, FormulaSheet, Benchmark, PhanCong
+│   │   └── interfaces.py     SyncMethod
+│   ├── benchmark/       # Desync generator, metrics, synthetic data, eval harness
+│   │   └── baselines/       CrossCorrelation, DTW, CaspiIrani, ZeroOffset
+│   ├── model/           # ContinuSyncFormer (RoPE + cross-view attention + regression head)
+│   ├── panoptic/        # CMU Panoptic loader / 2D projection
+│   └── realworld/       # In-the-wild multi-camera capture pipeline
+├── tools/               # sync_flash.html · record_webcams.py · sync_groundtruth.py
+├── scripts/             # demo_benchmark.py · run_benchmark.py
+├── tests/               # test_core.py
+└── docs/                # shoot sheet · formula sheet · benchmark design
 ```
-✅ = chạy được · ⬜ = stub chờ điền (đã có interface + TODO trong file)
 
----
+## Using the API
 
-## Hợp đồng dùng chung (đọc trước khi code)
+Every method — classical or learned — implements a single interface, so the harness runs
+them identically:
 
-Mọi thứ xoay quanh 2 file trong `mist/core/`:
-
-- **`KeypointSequence`** — `xy (T,J,2)`, `fps`, `timestamps?`, `name`. Đơn vị input chung.
-- **`SyncMethod.predict(a, b) -> SyncResult`** — trả `dt_frames` = offset của `b` so với `a`
-  (frame, thực, dấu: `+` là b trễ). Baseline VÀ model đều cài hàm này → harness chạy như nhau.
-
-Muốn thêm method mới (kể cả model đã train):
 ```python
+from mist.core import SyncMethod, SyncResult
+from mist.benchmark import synthetic, eval
+
 class MyMethod(SyncMethod):
     name = "My"
-    def predict(self, a, b): return SyncResult(dt_frames=..., confidence=...)
-# rồi: eval.run(samples, [MyMethod()])  → có số ngay
+    def predict(self, a, b):
+        return SyncResult(dt_frames=..., confidence=...)   # b relative to a, in frames
+
+samples = synthetic.make_dataset(n=240)
+results = eval.run(samples, [MyMethod()])
+print(eval.table(results))
 ```
 
----
+## Status
 
-## Ai làm gì (khớp docs/MIST_PhanCong.xlsx)
+| Component | State |
+|-----------|-------|
+| Desync generator, metrics, harness, synthetic data | ✅ implemented |
+| Cross-Correlation baseline | ✅ implemented |
+| DTW, Caspi–Irani baselines | ⬜ interface stub |
+| ContinuSyncFormer (model) | ⬜ architecture skeleton |
+| CMU Panoptic loader | ⬜ stub |
+| Real-world capture pipeline | ⬜ stub |
+| Capture & ground-truth tools | ✅ used on real captures |
 
-| Người | Thư mục | Nhiệm vụ chính |
-|------|---------|----------------|
-| **P1** | `benchmark/`, `panoptic/` | Panoptic loader → desync → harness → **baselines DTW/Caspi** |
-| **P2** | `model/` | ContinuSyncFormer (RoPE, cross-view, hierarchical head), train, ablation |
-| **P3** | `realworld/`, `tools/` | Giải nén/sync 5 cam, calibration, pose 2D, triangulation |
-| **P4** | (xuyên suốt) | Survey, phân tích, figures, viết LNCS, **nộp CSoNet**, repo |
+## Contributing
 
-TODO cụ thể nằm ngay trong từng file stub (`TODO(Px #ID)` khớp ID task trong sheet).
+Feature branches → pull request against `main`. `python tests/test_core.py` must pass before
+merge. Heavy data (videos, archives, extracted frames) is excluded via `.gitignore` and must
+not be committed.
 
----
+## Citation
 
-## Cài đặt
-
-```bash
-python -m venv .venv && . .venv/Scripts/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt          # numpy, scipy, opencv
-pip install -r requirements-model.txt    # torch — CHỈ P2 cần
+```bibtex
+@misc{mist,
+  title  = {MIST: Millisecond-accurate Intra-frame Synchronization for Multi-view Motion Capture},
+  author = {TODO},
+  year   = {TODO}
+}
 ```
 
-## Quy ước git
-- Nhánh theo workstream: `ws1-benchmark`, `ws2-model`, `ws3-data`, `ws4-writing`.
-- PR về `main`, không push thẳng. `python tests/test_core.py` phải PASS trước khi merge.
-- **KHÔNG commit data nặng** (video/zip/MIST_data) — đã chặn trong `.gitignore`.
-# mist-mocap
+## License
+
+To be added (see `LICENSE`).

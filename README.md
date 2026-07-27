@@ -99,3 +99,4 @@ pip install -r requirements-model.txt    # torch — CHỈ P2 cần
 - Nhánh theo workstream: `ws1-benchmark`, `ws2-model`, `ws3-data`, `ws4-writing`.
 - PR về `main`, không push thẳng. `python tests/test_core.py` phải PASS trước khi merge.
 - **KHÔNG commit data nặng** (video/zip/MIST_data) — đã chặn trong `.gitignore`.
+# mist-mocap

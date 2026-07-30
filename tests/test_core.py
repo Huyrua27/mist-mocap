@@ -33,7 +33,7 @@ def test_desync_roundtrip_cc():
         pred = cc.predict(a, b).dt_frames
         errs.append(abs(pred - dt))
     mean_err = float(np.mean(errs))
-    print(f"CC sai số trung bình = {mean_err:.4f} frame")
+    print(f"CC mean error = {mean_err:.4f} frame")
     assert mean_err < 0.15, f"CC lệch quá lớn ({mean_err}) — kiểm tra dấu/logic"
 
 

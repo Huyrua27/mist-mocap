@@ -1,29 +1,36 @@
 # Python
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments and local tooling
 .venv/
 venv/
-*.egg-info/
-.pytest_cache/
-.ipynb_checkpoints/
+.env
+.env.*
+!.env.example
 
-# Data nặng — KHÔNG commit
-MIST_data/
-MIST_capture_*/
-*.mp4
-*.mov
-*.zip
-*.avi
-data/
-checkpoints/
-*.ckpt
-*.pth
-
-# Panoptic download
-panoptic-toolbox/
-*.json.gz
-
-# OS / IDE
-.DS_Store
+# IDE / OS
 .vscode/
-*.roi.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Downloaded datasets and runtime data
+data/
+datasets/
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Download/cache intermediates
+*.part
+*.tmp
+*.download
+.cache/
+
+# Generated WS1 runs
+artifacts/ws1/*

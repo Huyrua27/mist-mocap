@@ -110,9 +110,9 @@ print(eval.table(results))
 |-----------|-------|
 | Desync generator, metrics, harness, synthetic data | ✅ implemented |
 | Cross-Correlation baseline | ✅ implemented |
-| DTW, Caspi–Irani baselines | ⬜ interface stub |
+| DTW, Caspi–Irani baselines | ✅ implemented |
 | ContinuSyncFormer (model) | ⬜ architecture skeleton |
-| CMU Panoptic loader | ⬜ stub |
+| CMU Panoptic loader | ✅ calibration + COCO-19 body poses |
 | Real-world capture pipeline | ⬜ stub |
 | Capture & ground-truth tools | ✅ used on real captures |
 

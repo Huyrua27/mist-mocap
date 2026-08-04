@@ -1,45 +1,122 @@
-# -*- coding: utf-8 -*-
-"""Bộ tiêm lệch thời gian trong MIỀN KEYPOINT (đóng góp thay cho IFID không có).
-
-Ý tưởng: Panoptic đã đồng bộ sẵn. Muốn có cặp lệch với GT chính xác, ta LẤY MẪU LẠI
-quỹ đạo 2D tại các thời điểm dịch đi ∆t bằng nội suy. Vì keypoint là tín hiệu trơn,
-nội suy sub-frame gần như hoàn hảo → GT ∆t tuyệt đối, KHÔNG artifact như tiêm pixel.
-
-Owner: P1 (WS1). Dùng cho cả train lẫn test của B1.
-"""
+"""Sub-frame keypoint-domain desynchronization with explicit source lineage."""
 from __future__ import annotations
+
+import math
+
 import numpy as np
-from ..core.types import KeypointSequence
+
+from ..core.types import KeypointSequence, SyncSample
+from .interpolation import cubic_sample
 
 
-def _resample(xy: np.ndarray, src_t: np.ndarray, dst_t: np.ndarray) -> np.ndarray:
-    """Nội suy (T,J,2) từ mốc src_t sang dst_t. Ưu tiên cubic spline (scipy),
-    fallback linear nếu thiếu scipy."""
-    try:
-        from scipy.interpolate import CubicSpline
-        return CubicSpline(src_t, xy, axis=0, extrapolate=True)(dst_t)
-    except Exception:
-        T, J, C = xy.shape
-        out = np.empty((len(dst_t), J, C))
-        for j in range(J):
-            for c in range(C):
-                out[:, j, c] = np.interp(dst_t, src_t, xy[:, j, c])
-        return out
+def _validate_sequence(seq: KeypointSequence) -> None:
+    if seq.T < 4:
+        raise ValueError("at least four frames are required for cubic interpolation")
+    if not np.isfinite(seq.xy).all():
+        raise ValueError("sequence contains non-finite keypoints; clean or mask it first")
+
+
+def _sample(seq: KeypointSequence, positions: np.ndarray) -> np.ndarray:
+    _validate_sequence(seq)
+    return cubic_sample(seq.xy, positions)
 
 
 def inject_offset(seq: KeypointSequence, dt_frames: float) -> KeypointSequence:
-    """Trả bản sao của `seq` bị TRỄ dt_frames khung (dt>0 = trễ).
+    """Return a same-length shifted sequence for compatibility.
 
-    dt có thể là số thực (sub-frame). Đây chính là nhãn ground-truth cho benchmark.
+    Boundary values use linear extrapolation. Benchmark construction should use
+    :func:`make_sample`, which crops to the common valid interval instead.
     """
-    src_t = np.arange(seq.T, dtype=float)          # trục thời gian gốc (đơn vị frame)
-    dst_t = src_t + dt_frames                      # lấy mẫu tại thời điểm dịch
-    xy2 = _resample(seq.xy, src_t, dst_t)
-    ts = None if seq.timestamps is None else seq.timestamps + dt_frames / seq.fps
-    return KeypointSequence(xy2, seq.fps, timestamps=ts,
-                            name=f"{seq.name}[{dt_frames:+.3f}f]")
+    _validate_sequence(seq)
+    src_t = np.arange(seq.T, dtype=np.float64)
+    xy = cubic_sample(seq.xy, src_t + float(dt_frames), extrapolate=True)
+    timestamps = (
+        None
+        if seq.timestamps is None
+        else seq.timestamps + float(dt_frames) / float(seq.fps)
+    )
+    return KeypointSequence(
+        xy,
+        seq.fps,
+        timestamps=timestamps,
+        name=f"{seq.name}[{dt_frames:+.3f}f]",
+    )
+
+
+def make_sample(
+    seq: KeypointSequence,
+    dt_frames: float,
+    *,
+    source_sequence: str | None = None,
+    velocity: float = 0.0,
+    noise_std: float = 0.0,
+    seed: int | None = None,
+) -> SyncSample:
+    """Create a leakage-auditable pair without boundary extrapolation artifacts."""
+    _validate_sequence(seq)
+    dt = float(dt_frames)
+    start = int(math.ceil(max(0.0, -dt)))
+    stop = int(math.floor(min(seq.T - 1.0, seq.T - 1.0 - dt))) + 1
+    if stop - start < 4:
+        raise ValueError(f"offset {dt} leaves fewer than four common frames")
+
+    base_t = np.arange(start, stop, dtype=np.float64)
+    a_xy = _sample(seq, base_t)
+    b_xy = _sample(seq, base_t + dt)
+    if noise_std:
+        rng = np.random.default_rng(seed)
+        a_xy = a_xy + rng.normal(0.0, noise_std, a_xy.shape)
+        b_xy = b_xy + rng.normal(0.0, noise_std, b_xy.shape)
+
+    timestamps = base_t / float(seq.fps)
+    source = source_sequence or seq.name
+    meta = {
+        "source_sequence": source,
+        "source_start_frame": start,
+        "source_stop_frame": stop,
+    }
+    return SyncSample(
+        a=KeypointSequence(a_xy, seq.fps, timestamps=timestamps, name=f"{source}/A"),
+        b=KeypointSequence(b_xy, seq.fps, timestamps=timestamps, name=f"{source}/B"),
+        dt_gt_frames=dt,
+        velocity=float(velocity),
+        meta=meta,
+    )
 
 
 def make_pair(seq: KeypointSequence, dt_frames: float):
-    """Tiện ích: trả (a=gốc, b=lệch, dt_gt) cho harness."""
-    return seq, inject_offset(seq, dt_frames), float(dt_frames)
+    sample = make_sample(seq, dt_frames)
+    return sample.a, sample.b, sample.dt_gt_frames
+
+
+def split_by_sequence(
+    samples: list[SyncSample],
+    test_ratio: float = 0.3,
+    seed: int = 42,
+    sequence_key: str = "source_sequence",
+) -> tuple[list[SyncSample], list[SyncSample]]:
+    """Split on immutable source-sequence IDs and reject unverifiable lineage."""
+    if not 0 < test_ratio < 1:
+        raise ValueError("test_ratio must be strictly between 0 and 1")
+    missing = [index for index, sample in enumerate(samples) if sequence_key not in sample.meta]
+    if missing:
+        raise ValueError(f"samples missing meta[{sequence_key!r}]: {missing[:5]}")
+
+    sequence_names = sorted({str(sample.meta[sequence_key]) for sample in samples})
+    if len(sequence_names) < 2:
+        raise ValueError("sequence-level split requires at least two source sequences")
+    rng = np.random.default_rng(seed)
+    rng.shuffle(sequence_names)
+    n_test = min(len(sequence_names) - 1, max(1, round(len(sequence_names) * test_ratio)))
+    test_names = set(sequence_names[:n_test])
+    train_names = set(sequence_names[n_test:])
+    if train_names & test_names:
+        raise AssertionError("source-sequence leakage detected")
+
+    train = [sample for sample in samples if sample.meta[sequence_key] in train_names]
+    test = [sample for sample in samples if sample.meta[sequence_key] in test_names]
+    for sample in train:
+        sample.meta["split"] = "train"
+    for sample in test:
+        sample.meta["split"] = "test"
+    return train, test

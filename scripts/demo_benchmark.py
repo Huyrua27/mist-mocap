@@ -1,37 +1,43 @@
-# -*- coding: utf-8 -*-
-"""DEMO CHẠY NGAY (không cần Panoptic, không cần torch).
+"""Run the WS1 harness on a small deterministic synthetic dataset."""
+from __future__ import annotations
 
-    python scripts/demo_benchmark.py
+import os
+import sys
 
-Sinh dữ liệu keypoint tổng hợp → tiêm offset có nhãn → chạy các baseline → in bảng
-metric + bảng theo bucket vận tốc. Đây là bằng chứng harness hoạt động, và là mẫu để
-mọi người cắm method của mình vào.
-"""
-import sys, os
+import numpy as np
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from mist.benchmark import synthetic, eval as bench_eval
-from mist.benchmark.baselines import ZeroOffset, CrossCorrelation, DTW, CaspiIrani
+from mist.benchmark import eval as bench_eval
+from mist.benchmark import synthetic
+from mist.benchmark.baselines import CaspiIrani, CrossCorrelation, DTW, ZeroOffset
 
 
-def main():
-    print("== MIST benchmark DEMO (synthetic) ==")
-    samples = synthetic.make_dataset(n=240, T=90, fps=30.0, seed=1, max_offset=2.0)
-    print(f"Đã sinh {len(samples)} mẫu (30fps, offset ∈ [-2,2] frame, 4 mức vận tốc)\n")
-
-    methods = [ZeroOffset(), CrossCorrelation(), DTW(), CaspiIrani()]
-    results = bench_eval.run(samples, methods)
-
+def main() -> None:
+    print("== MIST benchmark demo (synthetic) ==")
+    samples = synthetic.make_dataset(
+        n=24, T=60, fps=30.0, seed=1, max_offset=2.0
+    )
+    print(
+        f"Generated {len(samples)} samples "
+        "(30 fps, offsets in [-2, 2] frames).\n"
+    )
+    results = bench_eval.run(
+        samples, [ZeroOffset(), CrossCorrelation(), DTW(), CaspiIrani()]
+    )
     print(bench_eval.table(results))
     print()
-    # edges theo phân vị vận tốc synthetic (px/s) để 4 bucket đều có mẫu
-    import numpy as np
-    vel = np.array([s.velocity for s in samples])
-    edges = tuple(round(float(q), 0) for q in np.quantile(vel, [0.25, 0.5, 0.75]))
-    print(f"(vận tốc synthetic {vel.min():.0f}–{vel.max():.0f} px/s; edges={edges})")
+
+    # In production these edges must be fitted on training data and frozen.
+    velocity = np.array([sample.velocity for sample in samples])
+    edges = tuple(
+        round(float(value), 0) for value in np.quantile(velocity, [0.25, 0.5, 0.75])
+    )
+    print(
+        f"(synthetic speed {velocity.min():.0f}-{velocity.max():.0f} px/s; "
+        f"edges={edges})"
+    )
     print(bench_eval.bucket_table(results, edges=edges))
-    print("\n(DTW/Caspi = nan vì còn stub — điền vào là có số. "
-          "ContinuSyncFormer bọc thành SyncMethod rồi thêm vào list là chạy chung.)")
 
 
 if __name__ == "__main__":

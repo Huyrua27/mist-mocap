@@ -26,18 +26,22 @@ if _HAS_TORCH:
     class ContinuSyncFormer(nn.Module):
         def __init__(self, n_joints=17, d_model=128, n_heads=4, n_layers=3, max_offset=8,
                      pos_encoding="rope", cross_view=True, occlusion_aware=False,
-                     normalize=True):
+                     normalize=True, motion_input=False):
             super().__init__()
             assert pos_encoding in ("rope", "sincos", "none")
             self.pos_encoding = pos_encoding
             self.cross_view = cross_view
             self.occlusion_aware = occlusion_aware
             self.normalize = normalize
+            # motion_input: per-joint speed magnitudes instead of raw coords —
+            # view-tolerant (rotation/translation/scale-invariant after z-score),
+            # which is what makes cross-camera pairs (B1) learnable.
+            self.motion_input = motion_input
             use_rope = (pos_encoding == "rope")
 
             self.head_dim = d_model // n_heads
             self.max_offset = max_offset
-            self.embed = nn.Linear(n_joints * 2, d_model)
+            self.embed = nn.Linear(n_joints * (1 if motion_input else 2), d_model)
             self.enc = nn.ModuleList(
                 [EncoderBlock(d_model, n_heads, use_rope) for _ in range(n_layers)])
             if cross_view:
@@ -53,12 +57,25 @@ if _HAS_TORCH:
             sd = kp.std(dim=(1, 2), keepdim=True) + 1e-6
             return (kp - mu) / sd
 
+        def _motion(self, kp):
+            """Per-joint speed, z-scored over time (cf. baselines.motion_features)."""
+            speed = torch.gradient(kp, dim=1)[0].norm(dim=-1)  # (B,T,J)
+            mu = speed.mean(dim=1, keepdim=True)
+            sd = speed.std(dim=1, keepdim=True) + 1e-6
+            return (speed - mu) / sd
+
         def _encode(self, kp, vis, rope):
-            kp = gate_keypoints(self._norm(kp), vis)          # (B,T,J,2)
-            B, T, J, _ = kp.shape
-            x = self.embed(kp.reshape(B, T, J * 2))           # (B,T,d)
+            if self.motion_input:
+                feat = self._motion(kp)                        # (B,T,J)
+                if vis is not None and vis.numel():
+                    feat = feat * vis
+                x = self.embed(feat)                           # (B,T,d)
+            else:
+                kp = gate_keypoints(self._norm(kp), vis)       # (B,T,J,2)
+                B, T, J, _ = kp.shape
+                x = self.embed(kp.reshape(B, T, J * 2))        # (B,T,d)
             if self.pos_encoding == "sincos":
-                x = x + sinusoidal_pe(T, x.shape[-1], x.device)[None]
+                x = x + sinusoidal_pe(x.shape[1], x.shape[-1], x.device)[None]
             bias = reliability_bias(vis) if self.occlusion_aware else None
             for blk in self.enc:
                 x = blk(x, rope=rope, key_bias=bias)

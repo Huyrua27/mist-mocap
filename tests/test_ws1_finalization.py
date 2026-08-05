@@ -46,8 +46,12 @@ def test_corrupted_partial_download_is_repaired_atomically():
         partial.write_bytes(b"corrupt")
         original = downloader.subprocess.run
 
-        def fake_run(command, **_):
+        def fake_run(command, **kwargs):
+            # curl resolves a relative --output against its cwd; the downloader
+            # relies on that to keep non-ASCII directories out of curl's argv.
             output = Path(command[command.index("--output") + 1])
+            if not output.is_absolute():
+                output = Path(kwargs.get("cwd", ".")) / output
             output.write_bytes(b"repaired-content")
             return SimpleNamespace(returncode=0, stderr="")
 

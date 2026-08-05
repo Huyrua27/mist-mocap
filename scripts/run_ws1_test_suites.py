@@ -9,6 +9,8 @@ from finalize_ws1 import resolve_config
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):  # non-UTF-8 consoles vs non-ASCII paths
+        sys.stdout.reconfigure(errors="replace")
     _, run_dir = resolve_config()
     commands = [
         [sys.executable, "-m", "compileall", "-q", "mist", "scripts", "tests"],

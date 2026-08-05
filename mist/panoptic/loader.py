@@ -106,7 +106,13 @@ def load_pose3d(
     frame_indices = []
     for path in files:
         with open(path, encoding="utf-8") as handle:
-            frames.append(json.load(handle))
+            try:
+                frames.append(json.load(handle))
+            except json.JSONDecodeError:
+                # Some official archives ship truncated/empty frame files
+                # (e.g. 160422_haggling1 frame 11542) — treat as a bodyless
+                # frame so indices stay aligned instead of failing the load.
+                frames.append({"bodies": []})
         frame_indices.append(int(os.path.splitext(os.path.basename(path))[0].split("_")[-1]))
 
     selected_id = _select_person_id(frames, person_id)

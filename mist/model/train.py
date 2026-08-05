@@ -59,18 +59,22 @@ def evaluate(model, ka, kb, dt, va, vb, batch=256):
 
 
 def train(epochs=8, batch=64, lr=3e-4, device=None, out="checkpoints/csf.pt",
-          model_kwargs=None, n_train=6000, n_val=1000, occlusion_p=0.0, log=True):
+          model_kwargs=None, n_train=6000, n_val=1000, occlusion_p=0.0, log=True,
+          train_ds=None, val_ds=None):
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     model = ContinuSyncFormer(**(model_kwargs or {})).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     centers = model.head.centers
 
+    if train_ds is None:
+        train_ds = KeypointPairDataset(n=n_train, seed=1, occlusion_p=occlusion_p)
+    if val_ds is None:
+        val_ds = KeypointPairDataset(n=n_val, seed=999, occlusion_p=occlusion_p)
+    n_train, n_val = len(train_ds), len(val_ds)
     if log:
         print(f"[{device}] materializing data ({n_train} train / {n_val} val)...", flush=True)
-    tka, tkb, tdt, tva, tvb = _materialize(
-        KeypointPairDataset(n=n_train, seed=1, occlusion_p=occlusion_p), device)
-    vka, vkb, vdt, vva, vvb = _materialize(
-        KeypointPairDataset(n=n_val, seed=999, occlusion_p=occlusion_p), device)
+    tka, tkb, tdt, tva, tvb = _materialize(train_ds, device)
+    vka, vkb, vdt, vva, vvb = _materialize(val_ds, device)
 
     best, best_state = -1.0, None
     for ep in range(1, epochs + 1):
@@ -83,8 +87,12 @@ def train(epochs=8, batch=64, lr=3e-4, device=None, out="checkpoints/csf.pt",
             opt.step(); run += loss.item(); nb += 1
         m = evaluate(model, vka, vkb, vdt, vva, vvb)
         if log:
+            k = min(500, n_train)  # train-subset metric: overfit vs underfit
+            tm = evaluate(model, tka[:k], tkb[:k], tdt[:k], _sel(tva, slice(0, k)),
+                          _sel(tvb, slice(0, k)))
             print(f"ep{ep:02d} loss={run/nb:.4f} Accin@0.1={m['Accin@0.1']:.3f} "
-                  f"Frm.err={m['Frm.err']:.4f} MAE={m['MAE_ms']:.2f}ms", flush=True)
+                  f"Frm.err={m['Frm.err']:.4f} MAE={m['MAE_ms']:.2f}ms "
+                  f"(train Accin@0.1={tm['Accin@0.1']:.3f})", flush=True)
         if m["Accin@0.1"] > best:
             best = m["Accin@0.1"]
             best_state = {k: v.cpu() for k, v in model.state_dict().items()}

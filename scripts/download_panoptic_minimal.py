@@ -57,11 +57,15 @@ def _download(urls: list[str], destination: Path) -> dict:
                 "60",
                 "--continue-at",
                 "-",
+                # Relative --output + cwd: Windows curl.exe mangles non-ASCII
+                # argv (ANSI main), while cwd is passed Unicode-safe.
                 "--output",
-                str(partial),
+                partial.name,
                 url,
             ]
-            completed = subprocess.run(command, capture_output=True, text=True)
+            completed = subprocess.run(
+                command, capture_output=True, text=True, cwd=str(partial.parent)
+            )
             if completed.returncode != 0:
                 raise RuntimeError(completed.stderr.strip())
             if not partial.is_file() or partial.stat().st_size == 0:

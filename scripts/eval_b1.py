@@ -31,31 +31,49 @@ def main():
     ap.add_argument("--n", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=999)
     ap.add_argument("--root", default="data/panoptic_raw")
+    ap.add_argument("--occlusion-p", type=float, default=0.0,
+                    help="occlude each keypoint with this probability (task #18)")
+    ap.add_argument("--occlusion-aware", action="store_true",
+                    help="checkpoint was trained with occlusion_aware=True")
     args = ap.parse_args()
 
     ds = PanopticPairDataset(root=args.root, split=args.split, n=args.n,
-                             seed=args.seed)
-    print(f"split={args.split}  clips={len(ds.clips)}  samples={args.n}")
-    kas, kbs, gts = [], [], []
+                             seed=args.seed, occlusion_p=args.occlusion_p)
+    print(f"split={args.split}  clips={len(ds.clips)}  samples={args.n}"
+          f"  occlusion_p={args.occlusion_p}")
+    kas, kbs, gts, vas, vbs = [], [], [], [], []
     for i in range(args.n):
-        ka, kb, dt, _, _ = ds[i]
+        ka, kb, dt, va, vb = ds[i]
         kas.append(ka); kbs.append(kb); gts.append(float(dt))
+        vas.append(va); vbs.append(vb)
     gts = np.asarray(gts)
+    has_vis = args.occlusion_p > 0
 
-    model = ContinuSyncFormer(n_joints=19, motion_input=True).eval()
+    model = ContinuSyncFormer(n_joints=19, motion_input=True,
+                              occlusion_aware=args.occlusion_aware).eval()
     state = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
     model.load_state_dict(state["model"] if "model" in state else state)
 
     preds = {"ContinuSyncFormer": [], "CC+parabolic": [], "DTW": []}
     with torch.no_grad():
         ka_t, kb_t = torch.stack(kas), torch.stack(kbs)
+        va_t = torch.stack(vas) if has_vis else None
+        vb_t = torch.stack(vbs) if has_vis else None
         for s in range(0, args.n, 256):
-            out = model(ka_t[s:s + 256], kb_t[s:s + 256])
+            sl = slice(s, s + 256)
+            out = model(ka_t[sl], kb_t[sl],
+                        va_t[sl] if has_vis else None,
+                        vb_t[sl] if has_vis else None)
             preds["ContinuSyncFormer"] += out["dt_hard"].tolist()
     cc, dtw = CrossCorrelation(), DTW()
-    for ka, kb in zip(kas, kbs):
-        a = KeypointSequence(ka.numpy().astype(np.float64), FPS, name="a")
-        b = KeypointSequence(kb.numpy().astype(np.float64), FPS, name="b")
+    for ka, kb, va, vb in zip(kas, kbs, vas, vbs):
+        xa = ka.numpy().astype(np.float64)
+        xb = kb.numpy().astype(np.float64)
+        if has_vis:  # classical methods see occlusion as missing values (NaN)
+            xa[va.numpy() == 0] = np.nan
+            xb[vb.numpy() == 0] = np.nan
+        a = KeypointSequence(xa, FPS, name="a")
+        b = KeypointSequence(xb, FPS, name="b")
         for name, method in (("CC+parabolic", cc), ("DTW", dtw)):
             try:
                 preds[name].append(method.predict(a, b).dt_frames)

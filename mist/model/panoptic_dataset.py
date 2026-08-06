@@ -212,6 +212,11 @@ class PanopticPairDataset(Dataset):
         va = vb = torch.tensor([])
         if self.occlusion_p > 0:
             J = ka.shape[1]
-            va = (torch.rand(self.T, J) > self.occlusion_p).float()
-            vb = (torch.rand(self.T, J) > self.occlusion_p).float()
+            # Seed the mask from the per-sample rng (not global torch.rand) so a
+            # given (seed, i) yields the SAME occlusion every run — required to
+            # compare the standard vs occlusion-aware model on identical masks.
+            va = torch.from_numpy(
+                (rng.random((self.T, J)) > self.occlusion_p).astype(np.float32))
+            vb = torch.from_numpy(
+                (rng.random((self.T, J)) > self.occlusion_p).astype(np.float32))
         return ka, kb, torch.tensor(dt, dtype=torch.float32), va, vb

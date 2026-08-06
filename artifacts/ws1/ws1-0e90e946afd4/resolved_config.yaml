@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "raw_data_root": "C:\\Users\\Trần Minh Huy\\Downloads\\mist-mocap\\data\\panoptic_raw",
+  "processed_cache_root": "C:\\Users\\Trần Minh Huy\\Downloads\\mist-mocap\\data\\ws1_cache",
+  "artifact_root": "C:\\Users\\Trần Minh Huy\\Downloads\\mist-mocap\\artifacts\\ws1",
+  "pose_stream": "hdPose3d_stage1_coco19",
+  "fps": 29.97,
+  "image_width": 1920,
+  "image_height": 1080,
+  "sequences": [
+    {
+      "id": "171204_pose1_sample",
+      "split": "train",
+      "activity": "range_of_motion"
+    },
+    {
+      "id": "160906_band4",
+      "split": "train",
+      "activity": "band_multi_person"
+    },
+    {
+      "id": "160906_band1",
+      "split": "train",
+      "activity": "band_multi_person"
+    },
+    {
+      "id": "160906_ian5",
+      "split": "validation",
+      "activity": "solo_articulation"
+    },
+    {
+      "id": "160422_haggling1",
+      "split": "test",
+      "activity": "haggling_multi_person"
+    },
+    {
+      "id": "160226_haggling1",
+      "split": "test",
+      "activity": "haggling_multi_person"
+    }
+  ],
+  "video_sequence": "171204_pose1_sample",
+  "video_camera": "00_00",
+  "person_track_policy": {
+    "source": "stable_panoptic_body_id",
+    "max_interpolation_gap": 5,
+    "minimum_valid_joints": 8,
+    "minimum_confidence": 0.1,
+    "maximum_missing_fraction": 0.2
+  },
+  "camera_pair_policy": {
+    "pairs_per_sequence": 3,
+    "categories": [
+      "small",
+      "medium",
+      "wide"
+    ],
+    "minimum_in_frame_joints": 8,
+    "minimum_valid_frame_fraction": 0.5
+  },
+  "clip_length": 72,
+  "clip_stride": 180,
+  "maximum_clips_per_sequence": 3,
+  "minimum_valid_frames": 80,
+  "minimum_common_overlap": 48,
+  "offset_values": [
+    -7.5,
+    -3.0,
+    -0.5,
+    0.0,
+    0.25,
+    2.0,
+    7.5
+  ],
+  "alpha_values": [
+    0.96,
+    1.0,
+    1.04
+  ],
+  "affine_beta_values": [
+    -2.0,
+    0.0,
+    2.0
+  ],
+  "minimum_affine_drift_frames": 1.8,
+  "oversampling_factor": 4,
+  "dtw_window_frames": 10.0,
+  "cc_lag_range_frames": 10,
+  "affine_search": {
+    "alpha_min": 0.94,
+    "alpha_max": 1.06,
+    "alpha_steps": 25,
+    "beta_max": 10
+  },
+  "metric_thresholds_frames": [
+    0.1,
+    0.25,
+    0.5,
+    1.0
+  ],
+  "velocity_quantiles": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "seed": 2908,
+  "methods": [
+    "cross_correlation",
+    "dtw",
+    "caspi_irani"
+  ],
+  "report_grouping_dimensions": [
+    "method",
+    "protocol",
+    "source_sequence_id",
+    "velocity_bucket",
+    "beta_band",
+    "beta_sign",
+    "alpha_band",
+    "camera_pair_category",
+    "low_motion",
+    "status"
+  ],
+  "config_hash": "0e90e946afd4d4a09e386ce49834b1724b616a4faf4d575c0868a56374de07eb",
+  "run_id": "ws1-0e90e946afd4"
+}

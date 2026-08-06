@@ -1,0 +1,12 @@
+{
+  "unit": "physical_source_sequence_id",
+  "assignments": {
+    "171204_pose1_sample": "train",
+    "160906_band4": "train",
+    "160906_band1": "train",
+    "160906_ian5": "validation",
+    "160422_haggling1": "test",
+    "160226_haggling1": "test"
+  },
+  "split_manifest_hash": "6c88daf12ccf0754e18891f2c928f57073ac2d7ecf6d48ee50f4f5f1bb21ec97"
+}

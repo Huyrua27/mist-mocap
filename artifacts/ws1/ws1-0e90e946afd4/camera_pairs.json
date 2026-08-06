@@ -1,0 +1,182 @@
+[
+  {
+    "source_sequence_id": "171204_pose1_sample",
+    "camera_a": "00_04",
+    "camera_b": "00_18",
+    "camera_center_distance_cm": 129.629556,
+    "relative_view_angle_descriptor": "small",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 1.0,
+    "selection_reason": "deterministic small calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "171204_pose1_sample",
+    "camera_a": "00_08",
+    "camera_b": "00_13",
+    "camera_center_distance_cm": 358.381775,
+    "relative_view_angle_descriptor": "medium",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.842105,
+    "selection_reason": "deterministic medium calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "171204_pose1_sample",
+    "camera_a": "00_00",
+    "camera_b": "00_03",
+    "camera_center_distance_cm": 518.675783,
+    "relative_view_angle_descriptor": "wide",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.894737,
+    "selection_reason": "deterministic wide calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160906_band4",
+    "camera_a": "00_04",
+    "camera_b": "00_18",
+    "camera_center_distance_cm": 129.73122,
+    "relative_view_angle_descriptor": "small",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 1.0,
+    "selection_reason": "deterministic small calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160906_band4",
+    "camera_a": "00_08",
+    "camera_b": "00_13",
+    "camera_center_distance_cm": 358.812469,
+    "relative_view_angle_descriptor": "medium",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.842105,
+    "selection_reason": "deterministic medium calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160906_band4",
+    "camera_a": "00_09",
+    "camera_b": "00_25",
+    "camera_center_distance_cm": 518.862863,
+    "relative_view_angle_descriptor": "wide",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.842105,
+    "selection_reason": "deterministic wide calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160906_band1",
+    "camera_a": "00_24",
+    "camera_b": "00_26",
+    "camera_center_distance_cm": 129.799506,
+    "relative_view_angle_descriptor": "small",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.789474,
+    "selection_reason": "deterministic small calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160906_band1",
+    "camera_a": "00_11",
+    "camera_b": "00_23",
+    "camera_center_distance_cm": 390.502067,
+    "relative_view_angle_descriptor": "medium",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.631579,
+    "selection_reason": "deterministic medium calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160906_band1",
+    "camera_a": "00_21",
+    "camera_b": "00_30",
+    "camera_center_distance_cm": 520.043498,
+    "relative_view_angle_descriptor": "wide",
+    "valid_frame_coverage": 0.777778,
+    "in_frame_joint_coverage": 0.406433,
+    "selection_reason": "deterministic wide calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160906_ian5",
+    "camera_a": "00_04",
+    "camera_b": "00_18",
+    "camera_center_distance_cm": 129.73122,
+    "relative_view_angle_descriptor": "small",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 1.0,
+    "selection_reason": "deterministic small calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160906_ian5",
+    "camera_a": "00_08",
+    "camera_b": "00_13",
+    "camera_center_distance_cm": 358.812469,
+    "relative_view_angle_descriptor": "medium",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.736842,
+    "selection_reason": "deterministic medium calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160906_ian5",
+    "camera_a": "00_09",
+    "camera_b": "00_25",
+    "camera_center_distance_cm": 518.862863,
+    "relative_view_angle_descriptor": "wide",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.842105,
+    "selection_reason": "deterministic wide calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160422_haggling1",
+    "camera_a": "00_04",
+    "camera_b": "00_18",
+    "camera_center_distance_cm": 129.647854,
+    "relative_view_angle_descriptor": "small",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 1.0,
+    "selection_reason": "deterministic small calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160422_haggling1",
+    "camera_a": "00_08",
+    "camera_b": "00_13",
+    "camera_center_distance_cm": 358.526298,
+    "relative_view_angle_descriptor": "medium",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.789474,
+    "selection_reason": "deterministic medium calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160422_haggling1",
+    "camera_a": "00_00",
+    "camera_b": "00_03",
+    "camera_center_distance_cm": 519.191531,
+    "relative_view_angle_descriptor": "wide",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.789474,
+    "selection_reason": "deterministic wide calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160226_haggling1",
+    "camera_a": "00_01",
+    "camera_b": "00_19",
+    "camera_center_distance_cm": 129.420625,
+    "relative_view_angle_descriptor": "small",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.975146,
+    "selection_reason": "deterministic small calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160226_haggling1",
+    "camera_a": "00_04",
+    "camera_b": "00_13",
+    "camera_center_distance_cm": 353.476216,
+    "relative_view_angle_descriptor": "medium",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.684211,
+    "selection_reason": "deterministic medium calibration-distance quantile"
+  },
+  {
+    "source_sequence_id": "160226_haggling1",
+    "camera_a": "00_26",
+    "camera_b": "00_30",
+    "camera_center_distance_cm": 518.229794,
+    "relative_view_angle_descriptor": "wide",
+    "valid_frame_coverage": 1.0,
+    "in_frame_joint_coverage": 0.747076,
+    "selection_reason": "deterministic wide calibration-distance quantile"
+  }
+]

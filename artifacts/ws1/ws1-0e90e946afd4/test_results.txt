@@ -1,0 +1,43 @@
+$ C:\Users\Trần Minh Huy\Downloads\mist-mocap\.venv\Scripts\python.exe -m compileall -q mist scripts tests
+
+exit_code=0
+$ C:\Users\Trần Minh Huy\Downloads\mist-mocap\.venv\Scripts\python.exe tests/test_core.py
+CC mean error = 0.0119 frame
+ALL TESTS PASS
+exit_code=0
+$ C:\Users\Trần Minh Huy\Downloads\mist-mocap\.venv\Scripts\python.exe tests/test_ws1.py
+PASS test_affine_alpha_beta_recovery
+PASS test_cross_correlation_cross_view_transform
+PASS test_desync_crops_boundaries_and_preserves_lineage
+PASS test_dtw_subframe_offset
+PASS test_loader_minimal_fixture
+PASS test_metric_boundaries_and_per_sample_fps
+PASS test_projection_reference_formula
+PASS test_true_sequence_split_and_single_sequence_rejection
+PASS test_velocity_edges_are_fitted_once
+ALL 9 WS1 TESTS PASS
+exit_code=0
+$ C:\Users\Trần Minh Huy\Downloads\mist-mocap\.venv\Scripts\python.exe tests/test_ws1_finalization.py
+PASS test_affine_controls_below_above_and_combined_mapping
+PASS test_affine_overlap_and_drift_gate
+PASS test_aggregate_keeps_failures_and_macro_sequences
+PASS test_bounded_interpolation_has_no_endpoint_extrapolation
+PASS test_cc_boundary_peak_uses_discrete_value
+PASS test_cc_integer_zero_fractional_sign_and_constant_failure
+PASS test_coco19_skeleton_edges_match_joint_definition
+PASS test_config_hash_and_sample_ids_are_deterministic
+PASS test_corrupted_partial_download_is_repaired_atomically
+PASS test_downloader_reuses_complete_file_and_checksums_it
+PASS test_dtw_fractional_conversion_and_constant_failure
+PASS test_invalid_calibration_is_rejected
+PASS test_invalid_pose_schema_is_rejected
+PASS test_manifest_resource_order_is_deterministic
+PASS test_path_traversal_archive_is_rejected
+PASS test_safe_extraction_and_resume
+PASS test_sample_manifest_controls_and_inheritance
+PASS test_split_lineage_and_suffix_do_not_change_source
+PASS test_stable_person_segments_do_not_join_long_gaps
+PASS test_tied_velocity_edges_fail
+PASS test_velocity_buckets_are_train_only_and_boundaries_are_explicit
+ALL 21 WS1 FINALIZATION TESTS PASS
+exit_code=0

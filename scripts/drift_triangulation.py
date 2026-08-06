@@ -140,14 +140,17 @@ def run(args):
                         per = [mpjpe(est3d[i:i + 1], truth[i:i + 1]) for i in truth_idx]
                         curves[m].append(per)
 
-    print(f"\nDrift triangulation MPJPE (mm) -- {n_clips} clips, "
+    print(f"\nDrift triangulation MPJPE (mm), mean +/- std over clips -- {n_clips} clips, "
           f"clip_len={N}, window={W}, cams={args.cameras}")
-    print(f"{'drift(fr)':>10} " + "".join(f"{m:>11}" for m in methods))
+    print(f"{'drift(fr)':>10} " + "".join(f"{m:>16}" for m in methods))
     for d in drifts:
         row = f"{d:>10.2f} "
         for m in methods:
-            vals = [v for v in results[d][m] if np.isfinite(v)]
-            row += f"{10.0 * np.mean(vals):>11.2f}" if vals else f"{'-':>11}"
+            vals = [10.0 * v for v in results[d][m] if np.isfinite(v)]
+            if vals:
+                row += f"{np.mean(vals):>9.2f}+-{np.std(vals):<5.2f}"
+            else:
+                row += f"{'-':>16}"
         print(row)
 
     if not any(curves[m] for m in methods):

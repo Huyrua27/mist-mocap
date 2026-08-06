@@ -126,14 +126,18 @@ def run(args):
                     est, _, _ = fit_drift(csf_predict, a_stream, b_stream, FPS, W, S)
                     results[d]["CSF-slide"].append(err(est))
 
-    print(f"\nDrift recovery -- mean |delta_est - delta_true| (frames), lower better")
+    print(f"\nDrift recovery -- mean +/- std over clips of |delta_est - delta_true| "
+          f"(frames), lower better")
     print(f"{n_clips} clips, clip_len={N}, window={W}, stride={S}, beta={beta}")
-    print(f"{'drift(fr)':>10} " + "".join(f"{m:>13}" for m in methods))
+    print(f"{'drift(fr)':>10} " + "".join(f"{m:>18}" for m in methods))
     for d in drifts:
         row = f"{d:>10.2f} "
         for m in methods:
             vals = [v for v in results[d][m] if np.isfinite(v)]
-            row += f"{np.mean(vals):>13.4f}" if vals else f"{'-':>13}"
+            if vals:
+                row += f"{np.mean(vals):>10.4f}+-{np.std(vals):<6.4f}"
+            else:
+                row += f"{'-':>18}"
         print(row)
     print("\n(drift = total offset change across the clip; CC-const cannot track it.)")
 

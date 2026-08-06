@@ -26,16 +26,20 @@ def main():
                     help="Panoptic clip length T (short clips favour the learned model)")
     ap.add_argument("--select", choices=("accin", "frmerr"), default="accin",
                     help="checkpoint selection metric (frmerr for drift line-fitting)")
+    ap.add_argument("--seed", type=int, default=1,
+                    help="training seed (weights + data sampling) for multi-seed error bars")
     ap.add_argument("--motion", action="store_true",
                     help="motion (per-joint speed) input — recommended for --data panoptic")
     a = ap.parse_args()
+    import torch
+    torch.manual_seed(a.seed)
     kw = {"occlusion_aware": a.occlusion > 0, "motion_input": a.motion}
     train_ds = val_ds = None
     if a.data == "panoptic":
         from mist.model.panoptic_dataset import PanopticPairDataset
         kw["n_joints"] = 19
         train_ds = PanopticPairDataset(root=a.root, split="train", n=a.n_train,
-                                       seed=1, occlusion_p=a.occlusion, stride=6,
+                                       seed=a.seed, occlusion_p=a.occlusion, stride=6,
                                        T=a.clip_len)
         val_ds = PanopticPairDataset(root=a.root, split="validation", n=a.n_val,
                                      seed=999, occlusion_p=a.occlusion, T=a.clip_len)

@@ -120,20 +120,21 @@ Offset (fr) & naive & CC & ContinuSyncFormer & oracle \\
 % ---------------------------------------------------------------------------
 \begin{table}[t]
 \centering
-\caption{Recovering a \emph{drifting} inter-camera offset (mean $|\hat\delta(t)-\delta(t)|$
-in frames; lower better). A single lag (CC-const) cannot track drift; Caspi--Irani is a
-coarse affine grid; CC-slide degrades on the short windows drift tracking needs.
-ContinuSyncFormer in short sliding windows with a robust line fit (CSF-slide) wins at
-every drift level and is the only method that improves as drift grows.}
+\caption{Recovering a \emph{drifting} inter-camera offset (mean~$\pm$~std over 8 clips of
+$|\hat\delta(t)-\delta(t)|$ in frames; lower better). CC-const cannot track drift;
+Caspi--Irani is a coarse affine grid; CC-slide degrades on the short windows drift tracking
+needs and its std \emph{exceeds its mean} at high drift (it catastrophically fails on some
+clips). CSF-slide wins at every non-zero drift with far lower variance. Last column: mean~$\pm$~std
+over 4 training seeds -- the win is not a lucky seed.}
 \label{tab:b3_drift}
-\begin{tabular}{rrrrr}
+\begin{tabular}{rrrrrr}
 \toprule
-Drift (fr) & CC-const & Caspi--Irani & CC-slide & \textbf{CSF-slide (ours)} \\
+Drift (fr) & CC-const & Caspi & CC-slide & \textbf{CSF-slide} & CSF (over seeds) \\
 \midrule
-0.0 & 0.186 & 0.313 & 0.173 & \textbf{0.153} \\
-0.5 & 0.230 & 0.300 & 0.194 & \textbf{0.133} \\
-1.0 & 0.320 & 0.310 & 0.186 & \textbf{0.123} \\
-2.0 & 0.593 & 0.255 & 0.283 & \textbf{0.099} \\
+0.0 & 0.19\,$\pm$\,0.19 & 0.30\,$\pm$\,0.25 & 0.18\,$\pm$\,0.18 & 0.26\,$\pm$\,0.38 & 0.17\,$\pm$\,0.07 \\
+1.0 & 0.32\,$\pm$\,0.11 & 0.28\,$\pm$\,0.20 & 0.20\,$\pm$\,0.17 & \textbf{0.11\,$\pm$\,0.03} & 0.10\,$\pm$\,0.01 \\
+2.0 & 0.59\,$\pm$\,0.14 & 0.24\,$\pm$\,0.11 & 0.29\,$\pm$\,0.30 & \textbf{0.10\,$\pm$\,0.07} & 0.11\,$\pm$\,0.02 \\
+3.0 & 0.84\,$\pm$\,0.17 & 0.27\,$\pm$\,0.14 & 0.42\,$\pm$\,0.56 & \textbf{0.13\,$\pm$\,0.11} & 0.12\,$\pm$\,0.02 \\
 \bottomrule
 \end{tabular}
 \end{table}

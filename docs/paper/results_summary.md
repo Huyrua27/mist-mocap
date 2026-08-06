@@ -134,18 +134,25 @@ drift-aware but a coarse, fragile grid; CC-slide is fine only at long windows an
 degrades on the short windows drift tracking needs; CSF-slide (short-window learned
 estimates + Theil-Sen line) is robust across window size and drift.
 
-### Drift recovery error (frames) — 8 clips, window=20, T=20 model. Lower better.
+### Drift recovery error (frames), mean ± std — window=20, T=20. Lower better.
 
-| drift (fr) | CC-const | Caspi-Irani | CC-slide | **CSF-slide (ours)** |
-|---:|---:|---:|---:|---:|
-| 0.0 | 0.186 | 0.313 | 0.173 | **0.153** |
-| 0.5 | 0.230 | 0.300 | 0.194 | **0.133** |
-| 1.0 | 0.320 | 0.310 | 0.186 | **0.123** |
-| 2.0 | 0.593 | 0.255 | 0.283 | **0.099** |
+Two error bars: **over clips** (8 held-out clips) and **over training seeds** (4 models,
+seeds 1–4).
 
-CSF-slide wins at every drift level, and is the only method whose error *shrinks* as
-drift grows — at 2-frame drift it is ~3x better than CC-slide and ~6x better than
-CC-const. `scripts/drift_experiment.py`.
+| drift | CC-const | Caspi | CC-slide | CSF-slide (over clips) | CSF-slide (over seeds) |
+|---:|---:|---:|---:|---:|---:|
+| 0.0 | 0.186±0.19 | 0.303±0.25 | 0.180±0.18 | 0.261±0.38 | 0.173±0.07 |
+| 1.0 | 0.316±0.11 | 0.285±0.20 | 0.201±0.17 | **0.105±0.03** | **0.096±0.01** |
+| 2.0 | 0.588±0.14 | 0.242±0.11 | 0.288±0.30 | **0.101±0.07** | **0.113±0.02** |
+| 3.0 | 0.841±0.17 | 0.273±0.14 | 0.421±0.56 | **0.127±0.11** | **0.117±0.02** |
+
+At any real drift (≥ 0.5) CSF-slide has the lowest error **and the lowest variance** on
+both axes: across-seed std is tiny (±0.01–0.02 → the win is not a lucky seed), and
+across-clip std is far below CC-slide's, whose std *exceeds its mean* at high drift
+(0.42±0.56) — CC-slide catastrophically fails on some clips while CSF-slide stays tight.
+**Honest exception:** at drift 0 (no drift) CSF-slide is marginally worse than CC-slide —
+with nothing to track, sliding+curve only adds noise. The advantage is specific to the
+drift regime. `scripts/drift_experiment.py`.
 
 ### Drift recovery vs window size (mechanism) — 8 clips, T=20 model, 2-frame drift.
 

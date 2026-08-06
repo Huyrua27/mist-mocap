@@ -1,0 +1,89 @@
+% ============================================================================
+% MIST — Results tables (WS2 / task #27). Generated from scripts/eval_b1.py.
+% Requires \usepackage{booktabs} in the preamble.
+%
+% Checkpoint: checkpoints/csf_b1.pt  (motion input, 15 epochs, lr 1e-4)
+% All methods evaluated on the SAME (kp_a, kp_b, Δt) pairs per split.
+% Accin@τ = fraction of predictions within τ frames; higher is better.
+% Frm.err, MAE(ms): lower is better. FPS = 29.97.
+% ============================================================================
+
+% ---------------------------------------------------------------------------
+% Table 1: Main results on the Panoptic B1 benchmark (validation + held-out test)
+% ---------------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Sub-frame synchronization on the Panoptic B1 benchmark. ContinuSyncFormer
+is our method; Cross-Correlation and DTW are classical baselines. All methods see
+identical sample pairs. Best per column in \textbf{bold}.}
+\label{tab:b1_main}
+\begin{tabular}{llrrrr}
+\toprule
+Split & Method & Frm.err $\downarrow$ & Acc$_{in}$@0.1 $\uparrow$ & Acc$_{in}$@0.25 $\uparrow$ & MAE (ms) $\downarrow$ \\
+\midrule
+\multirow{3}{*}{Validation}
+ & ContinuSyncFormer (ours) & \textbf{0.237} & \textbf{0.469} & \textbf{0.811} & \textbf{7.90} \\
+ & CC + parabolic           & 0.430 & 0.435 & 0.746 & 14.34 \\
+ & DTW                      & 0.359 & 0.429 & 0.764 & 11.96 \\
+\midrule
+\multirow{3}{*}{Test (held-out)}
+ & ContinuSyncFormer (ours) & \textbf{0.126} & 0.556 & \textbf{0.929} & \textbf{4.21} \\
+ & CC + parabolic           & 0.205 & \textbf{0.628} & 0.926 & 6.85 \\
+ & DTW                      & 0.156 & 0.590 & \textbf{0.929} & 5.20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------
+% Table 2: Occlusion robustness (validation, 20% per-keypoint occlusion).
+% Deterministic masks: baselines are identical across both model runs.
+% ---------------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Occlusion robustness on validation with 20\% per-keypoint occlusion; all
+methods see identical occlusion masks. Occlusion-aware training (reliability-biased
+attention) improves the fraction of accurate predictions (Acc$_{in}$@$\tau$) at the
+cost of a slightly higher mean error. Best per column in \textbf{bold}.}
+\label{tab:b1_occlusion}
+\begin{tabular}{lrrrr}
+\toprule
+Method & Frm.err $\downarrow$ & Acc$_{in}$@0.1 $\uparrow$ & Acc$_{in}$@0.25 $\uparrow$ & MAE (ms) $\downarrow$ \\
+\midrule
+ContinuSyncFormer (standard)     & \textbf{0.318} & 0.342 & 0.683 & \textbf{10.59} \\
+ContinuSyncFormer (occ.\ aware)  & 0.384 & \textbf{0.396} & \textbf{0.710} & 12.81 \\
+CC + parabolic                   & 0.518 & 0.365 & 0.675 & 17.30 \\
+DTW                              & 0.386 & 0.374 & 0.686 & 12.89 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------
+% Table 3: Ablation on B1 validation. One axis flipped per row; 6 epochs each,
+% best val Acc@0.1. Single run — treat differences < ~0.03 as noise.
+% ---------------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Component ablation on Panoptic B1 validation (6 epochs, best
+Acc$_{in}$@0.1). Each row flips one axis of the full model. The motion-feature
+input is decisive; the positional-encoding variant and cross-view attention have
+negligible effect at this scale.}
+\label{tab:b1_ablation}
+\begin{tabular}{llrr}
+\toprule
+Axis & Variant & Acc$_{in}$@0.1 $\uparrow$ & $\Delta$ \\
+\midrule
+--- & full (RoPE + cross-view + motion) & 0.458 & --- \\
+\midrule
+\multirow{2}{*}{Positional enc.}
+ & sincos                & 0.442 & $-0.016$ \\
+ & none                  & 0.484 & $+0.026$ \\
+\midrule
+Cross-view attn.
+ & self-only (no cross)  & 0.453 & $-0.005$ \\
+\midrule
+\multirow{2}{*}{Input repr.}
+ & pose coords (no motion)        & 0.063 & $-0.395$ \\
+ & raw coords (no motion, no norm) & 0.012 & $-0.446$ \\
+\bottomrule
+\end{tabular}
+\end{table}

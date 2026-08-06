@@ -1,0 +1,28 @@
+{
+  "velocity_definition_version": "world-coco19-median-joint-displacement-v1",
+  "definition": "median finite COCO-19 joint displacement between adjacent 3D world-coordinate frames multiplied by FPS; centimeters/second; no body-scale normalization",
+  "unit": "cm/s",
+  "training_base_clip_ids": [
+    "04ea839f06a55405c31c",
+    "4bf14621364f9b2e3b3a",
+    "16da401aad57d96d1dea",
+    "8572c3505e4519b276d0",
+    "52c8ad6a9cc1d8debda5",
+    "c4fce4af002195a1576a",
+    "5d46b6665b836385740e"
+  ],
+  "training_base_clip_ids_hash": "927cec112026d2ac8e05d5c9f0dfb6219158369ba5c356275d8fc1f01f452351",
+  "quantile_policy": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "edges": [
+    4.803012,
+    6.241352,
+    8.574501999999999
+  ],
+  "fit_timestamp": "2026-08-04T09:50:03.874105+00:00",
+  "config_hash": "0e90e946afd4d4a09e386ce49834b1724b616a4faf4d575c0868a56374de07eb",
+  "code_version": "ws1-finalization-v1"
+}

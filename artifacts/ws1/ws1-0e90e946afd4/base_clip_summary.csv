@@ -1,0 +1,17 @@
+﻿base_clip_id,end_frame,frame_count,low_motion,minimum_valid_joints,person_id,pose_stream,source_sequence_id,split,start_frame,track_id,velocity_cm_s
+04ea839f06a55405c31c,71,72,False,19,0,hdPose3d_stage1_coco19,171204_pose1_sample,train,0,77131c47df4bf4cabff1,7.376991
+4bf14621364f9b2e3b3a,232,72,False,19,0,hdPose3d_stage1_coco19,160906_band4,train,161,8d2c14948295dfa9ed0c,6.241352
+16da401aad57d96d1dea,412,72,False,19,0,hdPose3d_stage1_coco19,160906_band4,train,341,8d2c14948295dfa9ed0c,5.24053
+8572c3505e4519b276d0,592,72,False,19,0,hdPose3d_stage1_coco19,160906_band4,train,521,8d2c14948295dfa9ed0c,4.365494
+52c8ad6a9cc1d8debda5,239,72,False,18,0,hdPose3d_stage1_coco19,160906_band1,train,168,eb1bb790f5242c7070ac,9.772013
+c4fce4af002195a1576a,419,72,False,19,0,hdPose3d_stage1_coco19,160906_band1,train,348,eb1bb790f5242c7070ac,4.32553
+5d46b6665b836385740e,599,72,False,18,0,hdPose3d_stage1_coco19,160906_band1,train,528,eb1bb790f5242c7070ac,26.081671
+a21dc00ff89ca4d06963,201,72,False,19,0,hdPose3d_stage1_coco19,160906_ian5,validation,130,332fe7c4aa7051788bc3,3.082848
+7aef3c5ac1081460f0cb,381,72,False,19,0,hdPose3d_stage1_coco19,160906_ian5,validation,310,332fe7c4aa7051788bc3,1.464616
+bcbc2249e208040187b6,561,72,False,19,0,hdPose3d_stage1_coco19,160906_ian5,validation,490,332fe7c4aa7051788bc3,7.453896
+39b84a7e67317304c668,612,72,False,19,1,hdPose3d_stage1_coco19,160422_haggling1,test,541,5ecd1677e67fcab4a421,4.715596
+49547e707b85708afb3d,792,72,False,19,1,hdPose3d_stage1_coco19,160422_haggling1,test,721,5ecd1677e67fcab4a421,2.519201
+0c4162f85711d71fbc6b,972,72,False,19,1,hdPose3d_stage1_coco19,160422_haggling1,test,901,5ecd1677e67fcab4a421,1.571
+46347a185abb0d78cef4,6177,72,False,18,10,hdPose3d_stage1_coco19,160226_haggling1,test,6106,aaafcb895bbffb9dd4f7,2.397319
+6663e5b7a61d7b9ca7d8,6357,72,False,19,10,hdPose3d_stage1_coco19,160226_haggling1,test,6286,aaafcb895bbffb9dd4f7,5.109111
+0ca717cccc9e46cc1ceb,6537,72,False,19,10,hdPose3d_stage1_coco19,160226_haggling1,test,6466,aaafcb895bbffb9dd4f7,7.91448

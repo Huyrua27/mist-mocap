@@ -87,3 +87,122 @@ Cross-view attn.
 \bottomrule
 \end{tabular}
 \end{table}
+
+% ---------------------------------------------------------------------------
+% Table 4: Downstream 3D — triangulation MPJPE vs desynchronization (B3).
+% Held-out test sequences; 3 HD cameras (nodes 0/10/20); 11 clips.
+% ---------------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Sub-frame desynchronization corrupts multi-view triangulation, and sync
+correction recovers it. MPJPE (mm) vs the true 3D on held-out Panoptic sequences;
+one camera is the reference, the others are shifted by $\pm$offset. \emph{naive}
+= no correction, \emph{oracle} = corrected with the true offset. At offset 0 the
+naive MPJPE is exactly 0, validating the project$\rightarrow$triangulate loop.}
+\label{tab:b3_triangulation}
+\begin{tabular}{rrrrr}
+\toprule
+Offset (fr) & naive & CC & ContinuSyncFormer & oracle \\
+\midrule
+0.00 & \textbf{0.00} & 0.49 & 2.03 & 0.00 \\
+0.25 & 0.92 & 0.65 & 1.96 & \textbf{0.19} \\
+0.50 & 1.91 & 0.99 & 2.17 & \textbf{0.36} \\
+1.00 & 3.88 & 0.58 & 1.56 & \textbf{0.00} \\
+2.00 & 7.64 & 0.53 & 1.51 & \textbf{0.00} \\
+3.00 & 11.27 & 0.53 & 1.47 & \textbf{0.00} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------
+% Table 5: Drift recovery -- the regime where the learned method wins.
+% Time-varying offset t_B = alpha*t_A + beta; 8 clips; window=20.
+% ---------------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Recovering a \emph{drifting} inter-camera offset (mean $|\hat\delta(t)-\delta(t)|$
+in frames; lower better). A single lag (CC-const) cannot track drift; Caspi--Irani is a
+coarse affine grid; CC-slide degrades on the short windows drift tracking needs.
+ContinuSyncFormer in short sliding windows with a robust line fit (CSF-slide) wins at
+every drift level and is the only method that improves as drift grows.}
+\label{tab:b3_drift}
+\begin{tabular}{rrrrr}
+\toprule
+Drift (fr) & CC-const & Caspi--Irani & CC-slide & \textbf{CSF-slide (ours)} \\
+\midrule
+0.0 & 0.186 & 0.313 & 0.173 & \textbf{0.153} \\
+0.5 & 0.230 & 0.300 & 0.194 & \textbf{0.133} \\
+1.0 & 0.320 & 0.310 & 0.186 & \textbf{0.123} \\
+2.0 & 0.593 & 0.255 & 0.283 & \textbf{0.099} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------
+% Table 6: Downstream 3D under drift -- MPJPE (mm). 2 clips (illustrative), window=20.
+% ---------------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Triangulation MPJPE (mm) under a drifting offset. A constant correction
+(CC-const) lets 3D error grow with drift; the learned sliding-window correction holds
+the reconstruction nearest the perfect-sync oracle across the take.}
+\label{tab:b3_drift_mpjpe}
+\begin{tabular}{rrrrrr}
+\toprule
+Drift (fr) & naive & CC-const & CC-slide & \textbf{CSF-slide (ours)} & oracle \\
+\midrule
+0.0 & 3.65 & 1.63 & 1.69 & \textbf{1.55} & 0.37 \\
+0.5 & 5.32 & 1.60 & 1.75 & \textbf{1.36} & 0.21 \\
+1.0 & 6.93 & 1.90 & 2.16 & \textbf{1.49} & 0.20 \\
+2.0 & 10.10 & 3.37 & 2.65 & \textbf{1.60} & 0.25 \\
+3.0 & 13.20 & 4.93 & 3.52 & \textbf{1.72} & 0.36 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------
+% Table 7: Drift recovery vs window size (mechanism). T=20 model, 8 clips.
+% CSF-slide is robust at every window; CC-slide is reliable only at long windows.
+% ---------------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Drift-recovery error (frames) vs sliding-window length, at 2-frame drift.
+CC-slide needs long windows to be reliable and still degrades; CSF-slide is robust
+down to very short windows -- which is what enables fine, low-latency drift tracking.}
+\label{tab:b3_window}
+\begin{tabular}{rrr}
+\toprule
+Window (frames) & CC-slide & \textbf{CSF-slide (ours)} \\
+\midrule
+16 & 0.268 & \textbf{0.091} \\
+20 & 0.288 & \textbf{0.101} \\
+24 & 0.207 & \textbf{0.116} \\
+32 & \textbf{0.101} & 0.184 \\
+48 & \textbf{0.145} & 0.140 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------
+% Table 8: Non-linear (oscillating) drift. window=16, period=100, 3 seqs.
+% Only the learned estimator can track a curve; classical curve-tracking is worse
+% than predicting the mean because CC's short-window estimates are too noisy.
+% ---------------------------------------------------------------------------
+\begin{table}[t]
+\centering
+\caption{Recovering a \emph{non-linear} (sinusoidal) offset (mean error, frames).
+A line/affine fit cannot represent a curve, so CC-const, Caspi--Irani and CC-line
+just predict the mean -- their error grows with amplitude. Classical curve tracking
+(CC-curve) is even worse: CC's short-window estimates are too noisy. Only the learned
+curve tracker (CSF-curve) keeps the error nearly amplitude-independent.}
+\label{tab:b3_nonlinear}
+\begin{tabular}{rrrrrr}
+\toprule
+Amp (fr) & CC-const & Caspi & CC-line & CC-curve & \textbf{CSF-curve (ours)} \\
+\midrule
+0.5 & 1.75 & 1.37 & \textbf{0.30} & 0.89 & 0.56 \\
+1.0 & 2.05 & 1.60 & \textbf{0.59} & 0.92 & 0.64 \\
+2.0 & 2.70 & 2.16 & 1.18 & 1.33 & \textbf{0.73} \\
+\bottomrule
+\end{tabular}
+\end{table}

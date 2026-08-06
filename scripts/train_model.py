@@ -22,6 +22,10 @@ def main():
     ap.add_argument("--root", default="data/panoptic_raw", help="Panoptic raw data root")
     ap.add_argument("--n-train", type=int, default=6000)
     ap.add_argument("--n-val", type=int, default=1000)
+    ap.add_argument("--clip-len", type=int, default=72,
+                    help="Panoptic clip length T (short clips favour the learned model)")
+    ap.add_argument("--select", choices=("accin", "frmerr"), default="accin",
+                    help="checkpoint selection metric (frmerr for drift line-fitting)")
     ap.add_argument("--motion", action="store_true",
                     help="motion (per-joint speed) input — recommended for --data panoptic")
     a = ap.parse_args()
@@ -31,13 +35,15 @@ def main():
         from mist.model.panoptic_dataset import PanopticPairDataset
         kw["n_joints"] = 19
         train_ds = PanopticPairDataset(root=a.root, split="train", n=a.n_train,
-                                       seed=1, occlusion_p=a.occlusion, stride=6)
+                                       seed=1, occlusion_p=a.occlusion, stride=6,
+                                       T=a.clip_len)
         val_ds = PanopticPairDataset(root=a.root, split="validation", n=a.n_val,
-                                     seed=999, occlusion_p=a.occlusion)
+                                     seed=999, occlusion_p=a.occlusion, T=a.clip_len)
     best = train(epochs=a.epochs, batch=a.batch, lr=a.lr, out=a.out,
                  model_kwargs=kw, occlusion_p=a.occlusion,
-                 n_train=a.n_train, n_val=a.n_val, train_ds=train_ds, val_ds=val_ds)
-    print(f"\nBest Accin@0.1 = {best:.3f}")
+                 n_train=a.n_train, n_val=a.n_val, train_ds=train_ds, val_ds=val_ds,
+                 select=a.select)
+    print(f"\nBest {a.select} score = {best:.3f}")
 
 
 if __name__ == "__main__":

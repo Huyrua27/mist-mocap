@@ -60,7 +60,7 @@ def evaluate(model, ka, kb, dt, va, vb, batch=256):
 
 def train(epochs=8, batch=64, lr=3e-4, device=None, out="checkpoints/csf.pt",
           model_kwargs=None, n_train=6000, n_val=1000, occlusion_p=0.0, log=True,
-          train_ds=None, val_ds=None):
+          train_ds=None, val_ds=None, select="accin"):
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     model = ContinuSyncFormer(**(model_kwargs or {})).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
@@ -93,11 +93,14 @@ def train(epochs=8, batch=64, lr=3e-4, device=None, out="checkpoints/csf.pt",
             print(f"ep{ep:02d} loss={run/nb:.4f} Accin@0.1={m['Accin@0.1']:.3f} "
                   f"Frm.err={m['Frm.err']:.4f} MAE={m['MAE_ms']:.2f}ms "
                   f"(train Accin@0.1={tm['Accin@0.1']:.3f})", flush=True)
-        if m["Accin@0.1"] > best:
-            best = m["Accin@0.1"]
+        # Drift line-fitting cares about mean error, not threshold accuracy →
+        # allow selecting the checkpoint by lowest Frm.err instead of Accin@0.1.
+        score = -m["Frm.err"] if select == "frmerr" else m["Accin@0.1"]
+        if score > best:
+            best = score
             best_state = {k: v.cpu() for k, v in model.state_dict().items()}
     if out and best_state is not None:
         os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
-        torch.save({"model": best_state, "best_accin01": best}, out)
-        if log: print(f"saved {out}  (best Accin@0.1={best:.3f})", flush=True)
+        torch.save({"model": best_state, "best_score": best, "select": select}, out)
+        if log: print(f"saved {out}  (best {select} score={best:.3f})", flush=True)
     return best

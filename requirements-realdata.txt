@@ -1,0 +1,4 @@
+# Real-data pipeline (Task #24). Core repo already needs numpy/scipy/opencv + torch.
+mediapipe>=0.10           # 2D pose extraction from real video (extract_pose2d.py)
+opencv-contrib-python>=4.7  # cv2.aruco for ChArUco calibration (calibrate_charuco.py)
+# note: opencv-contrib-python REPLACES opencv-python — uninstall the latter first if both installed.

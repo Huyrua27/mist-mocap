@@ -76,7 +76,7 @@ def train(epochs=8, batch=64, lr=3e-4, device=None, out="checkpoints/csf.pt",
     tka, tkb, tdt, tva, tvb = _materialize(train_ds, device)
     vka, vkb, vdt, vva, vvb = _materialize(val_ds, device)
 
-    best, best_state = -1.0, None
+    best, best_state = float("-inf"), None
     for ep in range(1, epochs + 1):
         model.train(); run, nb = 0.0, 0
         for ib in _batches(n_train, batch, True, device):

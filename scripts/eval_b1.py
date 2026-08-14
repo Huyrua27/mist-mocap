@@ -35,10 +35,13 @@ def main():
                     help="occlude each keypoint with this probability (task #18)")
     ap.add_argument("--occlusion-aware", action="store_true",
                     help="checkpoint was trained with occlusion_aware=True")
+    ap.add_argument("--noise-px", type=float, default=0.0)
+    ap.add_argument("--outlier-p", type=float, default=0.0)
     args = ap.parse_args()
 
     ds = PanopticPairDataset(root=args.root, split=args.split, n=args.n,
-                             seed=args.seed, occlusion_p=args.occlusion_p)
+                             seed=args.seed, occlusion_p=args.occlusion_p,
+                             noise_px=args.noise_px, outlier_p=args.outlier_p)
     print(f"split={args.split}  clips={len(ds.clips)}  samples={args.n}"
           f"  occlusion_p={args.occlusion_p}")
     kas, kbs, gts, vas, vbs = [], [], [], [], []

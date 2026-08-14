@@ -30,6 +30,7 @@ if hasattr(sys.stdout, "reconfigure"):
 import torch
 
 from mist.benchmark.baselines import CaspiIrani, CrossCorrelation
+from mist.benchmark.detector_noise import apply_detector_noise
 from mist.benchmark.drift import drift_offset, fit_drift, warp_stream
 from mist.core.types import KeypointSequence
 from mist.panoptic import load_calibration, load_pose3d, project_to_2d
@@ -88,6 +89,10 @@ def run(args):
         ca = cams[ka_key]; cb = cams[kb_key]
         clean_a, _ = _fill_gaps(project_to_2d(xyz, ca["K"], ca["R"], ca["t"]))
         clean_b, _ = _fill_gaps(project_to_2d(xyz, cb["K"], cb["R"], cb["t"]))
+        if args.noise_px or args.outlier_p:      # realistic per-view detector noise
+            nrng = np.random.default_rng(1234)
+            clean_a = apply_detector_noise(clean_a, nrng, args.noise_px, args.outlier_p)
+            clean_b = apply_detector_noise(clean_b, nrng, args.noise_px, args.outlier_p)
         finite = np.isfinite(clean_a).all(axis=(1, 2)) & np.isfinite(clean_b).all(axis=(1, 2))
         margin = int(math.ceil(max(abs(d) for d in drifts) + abs(beta))) + 3
         span = N + 2 * margin
@@ -156,6 +161,8 @@ def main():
     ap.add_argument("--max-clips", type=int, default=6)
     ap.add_argument("--max-frames", type=int, default=4000)
     ap.add_argument("--min-speed", type=float, default=40.0)
+    ap.add_argument("--noise-px", type=float, default=0.0)
+    ap.add_argument("--outlier-p", type=float, default=0.0)
     run(ap.parse_args())
 
 

@@ -30,6 +30,7 @@ if hasattr(sys.stdout, "reconfigure"):
 import torch
 
 from mist.benchmark.baselines import CrossCorrelation
+from mist.benchmark.detector_noise import apply_detector_noise
 from mist.benchmark.drift import fit_drift
 from mist.benchmark.interpolation import cubic_sample
 from mist.core.types import KeypointSequence
@@ -79,6 +80,10 @@ def run(args):
         mats = {k: projection_matrix(cams[k]["K"], cams[k]["R"], cams[k]["t"]) for k in keys}
         clean = {k: _fill_gaps(project_to_2d(xyz, cams[k]["K"], cams[k]["R"], cams[k]["t"]))[0]
                  for k in keys}
+        if args.noise_px or args.outlier_p:      # realistic per-view detector noise
+            nrng = np.random.default_rng(1234)
+            clean = {k: apply_detector_noise(v, nrng, args.noise_px, args.outlier_p)
+                     for k, v in clean.items()}
         finite = np.isfinite(xyz).all(axis=(1, 2))
         for k in keys:
             finite &= np.isfinite(clean[k]).all(axis=(1, 2))
@@ -187,6 +192,8 @@ def main():
     ap.add_argument("--max-frames", type=int, default=4000)
     ap.add_argument("--min-speed", type=float, default=40.0)
     ap.add_argument("--dump", default="")
+    ap.add_argument("--noise-px", type=float, default=0.0)
+    ap.add_argument("--outlier-p", type=float, default=0.0)
     run(ap.parse_args())
 
 

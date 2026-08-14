@@ -18,6 +18,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+from ..benchmark.detector_noise import apply_detector_noise
 from ..benchmark.interpolation import cubic_sample
 from ..panoptic import load_sequence
 
@@ -97,11 +98,13 @@ class PanopticPairDataset(Dataset):
     def __init__(self, root="data/panoptic_raw", split="train", n=4000, T=72,
                  max_offset=6.0, stride=12, seed=0, max_frames=None,
                  camera_nodes=CAMERA_NODES, occlusion_p=0.0,
-                 min_velocity=30.0, max_pair_angle=60.0, augment=None):
+                 min_velocity=30.0, max_pair_angle=60.0, augment=None,
+                 noise_px=0.0, outlier_p=0.0, outlier_px=25.0):
         if split not in SPLITS:
             raise ValueError(f"split must be one of {sorted(SPLITS)}, got {split!r}")
         self.n, self.T, self.max_offset = n, T, float(max_offset)
         self.seed, self.occlusion_p = seed, occlusion_p
+        self.noise_px, self.outlier_p, self.outlier_px = noise_px, outlier_p, outlier_px
         self.augment = (split == "train") if augment is None else augment
         margin = int(math.ceil(self.max_offset)) + 2  # cubic support + no extrapolation
         self.margin = margin
@@ -207,6 +210,9 @@ class PanopticPairDataset(Dataset):
         if self.augment:
             clip_a = self._affine(clip_a, rng)
             clip_b = self._affine(clip_b, rng)
+        if self.noise_px or self.outlier_p:      # simulate 2D-detector noise per view
+            clip_a = apply_detector_noise(clip_a, rng, self.noise_px, self.outlier_p, self.outlier_px)
+            clip_b = apply_detector_noise(clip_b, rng, self.noise_px, self.outlier_p, self.outlier_px)
         ka = torch.tensor(clip_a, dtype=torch.float32)
         kb = torch.tensor(clip_b, dtype=torch.float32)
         va = vb = torch.tensor([])
